@@ -8,7 +8,7 @@ from pymongo import MongoClient
 COMMENT_INFO = [("span", "score unvoted"),("div", "md"),("a", "author")]
 POST_INFO = [("div", "md"),("a", "author"), ("a", "title")]
 
-
+#nonsense comment
 def main():
 	# URL = "https://old.reddit.com/r/linguistics/comments/srbear/are_there_languages_with_explicit_markers_of_both/"
 	#
