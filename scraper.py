@@ -2,6 +2,8 @@ import requests
 from pymongo import MongoClient
 from bs4 import BeautifulSoup
 import time
+import pickle
+import re
 
 def main():
 	urls = ["/author/ambrose-bierce/short-story/a-baby-tramp"]
@@ -37,22 +39,40 @@ def main():
 
 
 def get_short_story(url, title, author):
+	headers = {'User-Agent': 'test_user'}
 	full_url = "https://americanliterature.com" + url
-	page = requests.get(full_url)
+	page = requests.get(full_url, headers=headers)
+	# pickle.dump(page, open("second.html.pickle", "wb"))
+	# page = pickle.load(open("test.html.pickle", "rb"))
+	# with open("second_time.html", "w") as f:
+	# 	f.write(str(page.content))
 	soup = BeautifulSoup(page.content, "html.parser")
-	with open("text.html", "w") as f:
-		f.write(str(page.content))
-	unparsed_story = soup.find('div', {"itemtype":"https://schema.org/ShortStory"}).findAll('p')
+	x = soup.find('div', {"itemtype":"https://schema.org/ShortStory"})
+	unparsed_story = x.findAll('p')
 	parsed = []
 	# print(unparsed_story)
+	count = 0
+	# print(unparsed_story)
 	for line in unparsed_story:
-		parsed.append(str(line.text))
+		if count < 1:
+			s = cleanhtml(str(line))
+			s = list(filter(None, s.split("\n")))
+			parsed = s
+			print(parsed)
+		count +=1
+	# print(parsed)
 	# print("LENGTH:", len(parsed))
 	return {
 		"title": title,
 		"author": author,
 		"story": parsed
 	}
+
+
+CLEANR = re.compile('<.*?>') 
+def cleanhtml(raw_html):
+	cleantext = re.sub(CLEANR, '', raw_html)
+	return cleantext
 
 def connect_to_mongo():
 	client = MongoClient()
