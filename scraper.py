@@ -58,14 +58,15 @@ def get_short_story(url, title, author):
 			s = cleanhtml(str(line))
 			s = list(filter(None, s.split("\n")))
 			parsed = s
-			print(parsed)
+			# print(parsed)
 		count +=1
 	# print(parsed)
 	# print("LENGTH:", len(parsed))
 	return {
 		"title": title,
 		"author": author,
-		"story": parsed
+		"refreshed": len(parsed),
+		"story": '\n'.join(parsed)
 	}
 
 
