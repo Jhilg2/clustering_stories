@@ -1,19 +1,49 @@
 import gc
 from pymongo import MongoClient
 import copy
-
+import pickle
 from scraper import get_short_story
 
 TRUE_K = 6
 
 def main(gen_vector, new_model):
 	db, collection = connect_to_mongo()
-	docs = collection.find({ "refreshed" : { "$exists" : False}}).limit(500)
-	# docs = collection.find({ "title" : "a-bad-business"}).limit(1)
-	# docs = collection.find({ "has_dup" : { "$exists" : False}}).limit(1500)
+	# docs = collection.find({ "refreshed" : 1 }).limit(500)
+	docs = collection.find()
+	# docs = collection.find({ "title" : "youth"})
 	story_list = []
 	titles = []
-	filter_duplicated_stories(docs, collection)
+	incorrect, incorrect_docs = find_incorrect_stories(docs)
+	pickle.dump(incorrect, open("incorrect_stories.pickle", "wb"))
+	with open("incorrect_stories.txt", 'w', encoding="utf-8") as f:
+		f.writelines("\n".join(incorrect))
+	print(len(incorrect_docs))
+	# for doc in incorrect_docs:
+	# 	collection.update_one(
+	# 		{
+	# 			"_id": doc["_id"]
+	# 		}, 
+	# 		{ 
+	# 			"$set": { 
+	# 				"complete" : False
+	# 			}
+	# 		}
+	# 	)
+	# filter_duplicated_stories(incorrect_docs, collection)
+
+def find_incorrect_stories(docs):
+	incorrect = []
+	incorrect_docs = []
+	for doc in docs:
+		l = doc["story"].split("\n")
+		# print(l[len(l)-2].startswith(" Add"))
+		if not check_correct(l[len(l)-2]):
+			incorrect.append(str((doc["title"], len(l), l[len(l)-2])))
+			incorrect_docs.append(doc)
+	return incorrect, incorrect_docs
+
+def check_correct(s):
+	return s == ", or . . . Read the next short story; " or s.startswith(" Add")
 
 def filter_duplicated_stories(docs, collection):
 	for doc in docs:
