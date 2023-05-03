@@ -1,23 +1,20 @@
 import requests
 from pymongo import MongoClient
 from bs4 import BeautifulSoup
-import time
-import pickle
 import re
+from datetime import datetime
 
 def main():
 	urls = ["/author/ambrose-bierce/short-story/a-baby-tramp"]
-	# for i in range(1):
-	# 	print(19)
-	# 	url = "https://americanliterature.com/short-story-library/?page=" + str(19)
-	# 	page = requests.get(url)
-	# 	soup = BeautifulSoup(page.content, "html.parser")
-	# 	link_list = soup.find("div", class_="row")
-	# 	for link in link_list.findAll('a'):
-	# 		urls.append(link.get('href'))
-	# 	time.sleep(2)
-	failed = []
-	# db, collection = connect_to_mongo()
+	for i in range(19):
+		print(19)
+		url = "https://americanliterature.com/short-story-library/?page=" + str(i)
+		page = requests.get(url)
+		soup = BeautifulSoup(page.content, "html.parser")
+		link_list = soup.find("div", class_="row")
+		for link in link_list.findAll('a'):
+			urls.append(link.get('href'))
+	db, collection = connect_to_mongo()
 	for url in urls:
 		try:
 			s = url.split("/")
@@ -26,26 +23,20 @@ def main():
 			author = s[2]
 			with open("text.txt", "w") as f:
 				f.writelines(get_short_story(url, title, author)["story"])
-			# x = collection.count_documents({"title": title})
-			# if x == 0:
-			# 	collection.insert_one(get_short_story(url, title, author))
-			# else:
-			# 	print("skipped:", title)
+			x = collection.count_documents({"title": title})
+			if x == 0:
+				collection.insert_one(get_short_story(url, title, author))
+			else:
+				print("skipped:", title)
 		except Exception as e:
 			print(e)
 			print(url)
-			failed.append(url)
-	print(failed)
 
 
 def get_short_story(url, title, author):
 	headers = {'User-Agent': 'test_user'}
 	full_url = "https://americanliterature.com" + url
 	page = requests.get(full_url, headers=headers)
-	# pickle.dump(page, open("second.html.pickle", "wb"))
-	# page = pickle.load(open("test.html.pickle", "rb"))
-	# with open("second_time.html", "w") as f:
-	# 	f.write(str(page.content))
 	soup = BeautifulSoup(page.content, "html.parser")
 	x = soup.find('div', {"itemtype":"https://schema.org/ShortStory"})
 	unparsed_story = x.findAll('p')
@@ -65,7 +56,7 @@ def get_short_story(url, title, author):
 	return {
 		"title": title,
 		"author": author,
-		"refreshed": len(parsed),
+		"refreshed": datetime.now(),
 		"story": '\n'.join(parsed)
 	}
 

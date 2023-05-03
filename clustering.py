@@ -9,7 +9,7 @@ from collections import Counter
 
 TRUE_K = 10
 
-def main(gen_vector, new_model):
+def main(gen_vector, new_model, select_k):
 	db, collection = connect_to_mongo()
 	docs = collection.find({"complete": True})
 	story_list = []
@@ -19,11 +19,12 @@ def main(gen_vector, new_model):
 		titles.append(doc["title"])
 	print(len(titles))
 	x = vectorize(story_list, gen_vector)
-	# select_k(x)
+	if select_k:
+		select_k(x)
 	labels=cluster(x, new_model)
 	cluster_silhouette_score(x, labels)
 	write_labels_to_document(labels, titles)
-	# print("Stories in each group",Counter(labels))
+	print("Stories in each group",Counter(labels))
 
 
 
