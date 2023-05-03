@@ -3,56 +3,54 @@ from pymongo import MongoClient
 from bs4 import BeautifulSoup
 import re
 from datetime import datetime
+import logging
+import pickle
+
+logging.basicConfig(level=logging.INFO, filename="scraper.log")
 
 def main():
-	urls = ["/author/ambrose-bierce/short-story/a-baby-tramp"]
-	for i in range(19):
-		print(19)
-		url = "https://americanliterature.com/short-story-library/?page=" + str(i)
-		page = requests.get(url)
-		soup = BeautifulSoup(page.content, "html.parser")
-		link_list = soup.find("div", class_="row")
-		for link in link_list.findAll('a'):
-			urls.append(link.get('href'))
+	urls = ["/author/anton-chekhov/short-story/uprooted"]
+	# for i in range(1):
+	# 	url = "https://americanliterature.com/short-story-library/?page=" + str(19)
+	# 	page = requests.get(url)
+	# 	soup = BeautifulSoup(page.content, "html.parser")
+	# 	link_list = soup.find("div", class_="row")
+	# 	urls.extend([link.get('href') for link in link_list.findAll('a')])
+	# logging.debug(f"Urls received: [{', '.join(urls)}] ")
+
+
 	db, collection = connect_to_mongo()
 	for url in urls:
-		try:
-			s = url.split("/")
-			print(s)
-			title = s[4]
-			author = s[2]
-			with open("text.txt", "w") as f:
-				f.writelines(get_short_story(url, title, author)["story"])
-			x = collection.count_documents({"title": title})
-			if x == 0:
-				collection.insert_one(get_short_story(url, title, author))
-			else:
-				print("skipped:", title)
-		except Exception as e:
-			print(e)
-			print(url)
+		# try:
+		s = url.split("/")
+		title = s[4]
+		author = s[2]
+		x = get_short_story(url, title, author)
+		logging.info(f"story object: {x}")
+		# if collection.count_documents({"title": title}) == 0:
+		# 	collection.insert_one(get_short_story(url, title, author))
+		# else:
+		# 	print("skipped:", title)
+		# except Exception as e:
+		# 	print(e)
+		# 	logging.error(f"Error: {e} for URL {url}")
 
 
 def get_short_story(url, title, author):
-	headers = {'User-Agent': 'test_user'}
 	full_url = "https://americanliterature.com" + url
-	page = requests.get(full_url, headers=headers)
-	soup = BeautifulSoup(page.content, "html.parser")
-	x = soup.find('div', {"itemtype":"https://schema.org/ShortStory"})
-	unparsed_story = x.findAll('p')
+	# page = requests.get(full_url)
+	# with open("test_story.pickle","wb") as f:
+	# 	pickle.dump(page.content, f)
+	# soup = BeautifulSoup(page.content, "html.parser")
+	content = pickle.load(open("test_story.pickle", "rb"))
+	soup = BeautifulSoup(content, "html.parser")
+	story_html = soup.find('div', {"itemtype":"https://schema.org/ShortStory"})
+	print(story_html)
+	unparsed_story = story_html.findAll('p')
 	parsed = []
-	# print(unparsed_story)
-	count = 0
-	# print(unparsed_story)
-	for line in unparsed_story:
-		if count < 1:
-			s = cleanhtml(str(line))
-			s = list(filter(None, s.split("\n")))
-			parsed = s
-			# print(parsed)
-		count +=1
-	# print(parsed)
-	# print("LENGTH:", len(parsed))
+	line = unparsed_story[0]
+	html_cleaned_story = cleanhtml(str(line))
+	parsed = list(filter(None, html_cleaned_story.split("\n")))
 	return {
 		"title": title,
 		"author": author,
